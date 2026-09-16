@@ -35,7 +35,7 @@ List<int> lager = new List<int>
 //Varukorgen: vilken produkt -> antal st som köpts.
 Dictionary<string, int> varukorg = new Dictionary<string, int>();
 
-//Räknar ihop priset för allt som köpts.
+//Räknar ihop  det totala priset för alla produkter som köpts.
 int totalPris = 0;
 
 //**************************************************************
@@ -48,10 +48,12 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
     {
         if (lager[i] > 0)
         {
+            //Visar produkter med priser samt lagerstatus.
             Console.WriteLine($"{i + 1}. {produkter[i]} - {priser[i]} kr ({lager[i]} st i lager)");
         }
         else
         {
+            //Ifall en produkt är slutsåld så visas detta istället.
                         Console.WriteLine($"{i + 1}. {produkter[i]} - {priser[i]} kr (SLUT)");
         }
     }
@@ -72,7 +74,7 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
 
 
 
-
+// låter användaren ange antingen siffra eller bokstavera menyvalet.
         Console.Write("Ange produktnamn, menynummer eller 'borttag' (Enter = avsluta): ");
     string? val = Console.ReadLine();
 
@@ -82,36 +84,38 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
         break;
     }
 
-    //Kommandot "borttag" tar en vara ur varukorgen och lägger tillbaka i lagret.
+    //Kommandot "borttag" tar en vara ur varukorgen och lägger sedan tillbaka den i lagret.
     if (val.Equals("borttag", StringComparison.OrdinalIgnoreCase))
     {
         if (varukorg.Count == 0)
         {
+            //Felhantering ifall varukorgen redan är tom så kan man inte ta bort vara.
             Console.WriteLine("Varukorgen är tom - inget att ta bort.");
             continue;
         }
 
-        Console.WriteLine("Vilken produkt vill du ta bort? (namn eller nummer)");
-        Console.Write("Ange produkten: ");
+        Console.WriteLine("Vilken produkt vill du ta bort? (namn eller nummer)"); 
+        Console.Write("Ange produkten: "); //användaren får ange vilken produkt som ska tas bort med nummer eller produktens namn.
         string? bortVal = Console.ReadLine();
 
+//Felhantering för tomma strängar och null.
         if (string.IsNullOrWhiteSpace(bortVal))
         {
             continue; //Gå tillbaka till huvudmenyn.
         }
 
-                //Sök upp produkten som ska tas bort (nummer eller namn).
+                //Söker upp produkten som ska tas bort (nummer eller namn).
         int bortIndex = -1;
         if (int.TryParse(bortVal, out int bortMenyVal) && bortMenyVal >= 1 && bortMenyVal <= produkter.Count)
         {
-            bortIndex = bortMenyVal - 1;
+            bortIndex = bortMenyVal - 1; 
         }
         else
         {
             bortIndex = produkter.FindIndex(p => p.Equals(bortVal, StringComparison.OrdinalIgnoreCase));
         }
 
-                //Kontrollera att produkten finns och att den finns i varukorgen.
+                //Kontrollerar om produkten finns och att den finns i varukorgen.
         if (bortIndex != -1)
         {
             string bortProdukt = produkter[bortIndex];
@@ -127,22 +131,22 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
                     varukorg.Remove(bortProdukt);
                 }
 
-                //Lägg tillbaka i lagret och dra bort priset från totalen.
+                //Lägg tillbaka i lagret och dra bort priset från totalen i kundkorgen.
                 lager[bortIndex]++;
                 totalPris -= priser[bortIndex];
 
-                Console.WriteLine($"{bortProdukt} har tagits bort från varukorgen och lagts tillbaka i lagret. ({lager[bortIndex]} st i lager)");
+                Console.WriteLine($"{bortProdukt} har tagits bort från varukorgen och lagts tillbaka i lagret. ({lager[bortIndex]} st i lager)"); //Bekräftelse på borttag av produkt från varukorg.
             }
             else
             {
-                Console.WriteLine($"Du har inte {bortProdukt} i din varukorg.");
+                Console.WriteLine($"Du har inte {bortProdukt} i din varukorg."); //Produkten som du angav finns inte i varukorgen.
             }
         }
         else
         {
-            Console.WriteLine($"Produkten '{bortVal}' hittades inte.");
+            Console.WriteLine($"Produkten '{bortVal}' hittades inte."); // skrivs ut ifall produkten inte hittades.
         }
-        continue; //Gå tillbaka till huvudmenyn.
+        continue; //Går tillbaka till huvudmenyn.
     }
 
         //Felhantering: försök först att tolka valet som menynummer, annars som produktnamn.
@@ -162,7 +166,7 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
     }
     else
     {
-        //Inte en siffra, så sök upp produkten i listan (oavsett versaler/gesmaler).
+        //Om produkten inte anges med en siffra, så söks produkten upp i listan (oavsett versaler/gesmaler).
         index = produkter.FindIndex(p => p.Equals(val, StringComparison.OrdinalIgnoreCase));
         if (index == -1)
         {
@@ -171,14 +175,14 @@ while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
         }
     }
 
-        //if sats där programmet räknar ut om produkten finns i lager eller inte.
+        //if sats där programmet räknar ut ifall produkten finns i lager eller inte.
     if (lager[index] > 0)
     {
         //Lägg till priset i totalen och minska antalet i lager.
         totalPris += priser[index];
         lager[index]--;
 
-        //Lägg produkten i varukorgen (ökar antalet om den redan finns).
+        //Lägg produkten i varukorgen (ökar antalet om den redan finns tidigare i varukorgen).
         if (varukorg.ContainsKey(produkter[index]))
         {
             varukorg[produkter[index]]++;
@@ -201,7 +205,7 @@ Console.WriteLine();
 Console.WriteLine("=== Ditt kvitto ===");
 if (varukorg.Count > 0)
 {
-    foreach (var artikel in varukorg)
+    foreach (var artikel in varukorg) //Räknar upp alla artiklar i varukorgen.
     {
         //Sök upp priset för artikeln.
         int prisIndex = produkter.IndexOf(artikel.Key);
