@@ -1,222 +1,214 @@
-//Using System hjälper till att koden inte behöver specificera System i Console inmatning/utskrivning.
-//Exempel System.Console.WriteLine blir Console.WriteLine.
+//Using System hjälper till så att koden inte behöver specificera System i Console inmatning/utskrivning.
+//Exempel: System.Console.WriteLine blir Console.WriteLine.
 using System;
 
-//Denna raden hjälper till att lagra i listor.
+//Denna rad hjälper till att lagra saker i listor.
 using System.Collections.Generic;
 
-//Denna raden hjälper till att använda metoder som .All() och .Sum() på listorna.
+//Denna rad hjälper till att använda metoder som .Sum() på listorna.
 using System.Linq;
+
+//Denna rad hjälper till att läsa och skriva till filer.
+using System.IO;
 //**************************************************************
-//Lista med produkter.
-List<string> produkter = new List<string>
+//Inköpslistans varunamn. Listan startar tom och fylls på
+//antingen från filen eller när användaren lägger till varor.
+List<string> inkopslista = new List<string>();
+
+//Inköpslistans priser (i kronor). Hålls i synk med listan ovan:
+//samma index i båda listorna betyder samma vara.
+//Decimal används så att priset kan ha två decimaler, t.ex. 10,50.
+List<decimal> priser = new List<decimal>();
+
+//Namnet på filen där inköpslistan sparas.
+string filNamn = "inkopslista.txt";
+
+//Kollar om en text är ett giltigt pris: ett icke-negativt tal med högst två decimaler,
+//t.ex. 25, 10,5 eller 10,50. Sätter priset i 'pris' om det är giltigt.
+bool ErtGiltigtPris(string? text, out decimal pris)
 {
-"Mjölk",
-"Bröd",
-"Ost"
-};
-
-//Lista med priser (i kronor).
-List<int> priser = new List<int>
-{
-    15,
-    32,
-    89
-};
-
-//Lista med lagerstatus (antal st i lager per produkt).
-List<int> lager = new List<int>
-{
-    10,
-    5,
-    3
-};
-
-//Varukorgen: vilken produkt -> antal st som köpts.
-Dictionary<string, int> varukorg = new Dictionary<string, int>();
-
-//Räknar ihop  det totala priset för alla produkter som köpts.
-int totalPris = 0;
-
-//**************************************************************
-//Loopar så länge det finns något kvar i lagret eller något i varukorgen.
-while (!lager.All(antal => antal == 0) || varukorg.Count > 0)
-{
-    //Visar alla produkter med pris och lagerstatus.
-    Console.WriteLine("Våra produkter:");
-    for (int i = 0; i < produkter.Count; i++)
+    //Först: är texten ett tal alls?
+    if (!decimal.TryParse(text, out pris))
     {
-        if (lager[i] > 0)
-        {
-            //Visar produkter med priser samt lagerstatus.
-            Console.WriteLine($"{i + 1}. {produkter[i]} - {priser[i]} kr ({lager[i]} st i lager)");
-        }
-        else
-        {
-            //Ifall en produkt är slutsåld så visas detta istället.
-                        Console.WriteLine($"{i + 1}. {produkter[i]} - {priser[i]} kr (SLUT)");
-        }
+        return false;
     }
 
-    //Visar vad som ligger i varukorgen just nu.
-    if (varukorg.Count > 0)
+    //Sedan: priset får inte vara negativt och får ha högst två decimaler
+    //(0,01 kr är den minsta enheten).
+    return pris >= 0 && pris % 0.01m == 0;
+}
+
+//Läser in varorna från filen om den finns (t.ex. från en tidigare körning).
+//Om filen inte finns, till exempel vid allra första start, startar listan tom.
+if (File.Exists(filNamn))
+{
+    foreach (string rad in File.ReadAllLines(filNamn))
     {
-        Console.WriteLine("Din varukorg:");
-        foreach (var artikel in varukorg)
+        //Hoppa över tomma rader i filen.
+        if (string.IsNullOrWhiteSpace(rad))
         {
-            Console.WriteLine($"  {artikel.Key}: {artikel.Value} st");
-        }
-    }
-
-
-
-
-
-
-
-// låter användaren ange antingen siffra eller bokstavera menyvalet.
-        Console.Write("Ange produktnamn, menynummer eller 'borttag' (Enter = avsluta): ");
-    string? val = Console.ReadLine();
-
-    //Avslutar köpet om användaren inte anger något.
-    if (string.IsNullOrWhiteSpace(val))
-    {
-        break;
-    }
-
-    //Kommandot "borttag" tar en vara ur varukorgen och lägger sedan tillbaka den i lagret.
-    if (val.Equals("borttag", StringComparison.OrdinalIgnoreCase))
-    {
-        if (varukorg.Count == 0)
-        {
-            //Felhantering ifall varukorgen redan är tom så kan man inte ta bort vara.
-            Console.WriteLine("Varukorgen är tom - inget att ta bort.");
             continue;
         }
 
-        Console.WriteLine("Vilken produkt vill du ta bort? (namn eller nummer)"); 
-        Console.Write("Ange produkten: "); //användaren får ange vilken produkt som ska tas bort med nummer eller produktens namn.
-        string? bortVal = Console.ReadLine();
+        //Varje rad i filen ser ut så här: Namn;Pris
+        string[] delar = rad.Split(';');
 
-//Felhantering för tomma strängar och null.
-        if (string.IsNullOrWhiteSpace(bortVal))
+        //Om raden har både namn och giltigt pris, lägg till varan.
+        //Trasiga rader hoppas över, så kraschar programmet inte.
+        if (delar.Length == 2 && ErtGiltigtPris(delar[1], out decimal lagratPris))
         {
-            continue; //Gå tillbaka till huvudmenyn.
+            inkopslista.Add(delar[0]);
+            priser.Add(lagratPris);
         }
+    }
+}
 
-                //Söker upp produkten som ska tas bort (nummer eller namn).
-        int bortIndex = -1;
-        if (int.TryParse(bortVal, out int bortMenyVal) && bortMenyVal >= 1 && bortMenyVal <= produkter.Count)
-        {
-            bortIndex = bortMenyVal - 1; 
-        }
-        else
-        {
-            bortIndex = produkter.FindIndex(p => p.Equals(bortVal, StringComparison.OrdinalIgnoreCase));
-        }
+//Sparar hela listan i filen, så finns varorna kvar nästa gång programmet körs.
+void SparaListan()
+{
+    List<string> rader = new List<string>();
 
-                //Kontrollerar om produkten finns och att den finns i varukorgen.
-        if (bortIndex != -1)
-        {
-            string bortProdukt = produkter[bortIndex];
-            if (varukorg.ContainsKey(bortProdukt))
-            {
-                //Ta bort en st från varukorgen (eller radera raden helt om det var den enda).
-                if (varukorg[bortProdukt] > 1)
-                {
-                    varukorg[bortProdukt]--;
-                }
-                else
-                {
-                    varukorg.Remove(bortProdukt);
-                }
-
-                //Lägg tillbaka i lagret och dra bort priset från totalen i kundkorgen.
-                lager[bortIndex]++;
-                totalPris -= priser[bortIndex];
-
-                Console.WriteLine($"{bortProdukt} har tagits bort från varukorgen och lagts tillbaka i lagret. ({lager[bortIndex]} st i lager)"); //Bekräftelse på borttag av produkt från varukorg.
-            }
-            else
-            {
-                Console.WriteLine($"Du har inte {bortProdukt} i din varukorg."); //Produkten som du angav finns inte i varukorgen.
-            }
-        }
-        else
-        {
-            Console.WriteLine($"Produkten '{bortVal}' hittades inte."); // skrivs ut ifall produkten inte hittades.
-        }
-        continue; //Går tillbaka till huvudmenyn.
+    //Bygg en rad per vara: Namn;Pris
+    for (int i = 0; i < inkopslista.Count; i++)
+    {
+        rader.Add($"{inkopslista[i]};{priser[i]}");
     }
 
-        //Felhantering: försök först att tolka valet som menynummer, annars som produktnamn.
-    int index = -1;
-    if (int.TryParse(val, out int menyVal))
+    //Skriv alla rader till filen (fileras över om den redan finns).
+    File.WriteAllLines(filNamn, rader);
+}
+
+//**************************************************************
+//Loopar så länge programmet inte har avslutats, och visar i varje varv
+//listan som en numrerad lista med totalsumma och sedan en meny.
+bool avsluta = false;
+while (!avsluta)
+{
+    //Visa inköpslistan, numrerad, med pris för varje vara.
+    Console.WriteLine("=== Din inköpslista ===");
+    if (inkopslista.Count == 0)
     {
-        if (menyVal >= 1 && menyVal <= produkter.Count)
-        {
-            //Användaren valde via meny, t.ex. "1" blir index 0.
-            index = menyVal - 1;
-        }
-        else
-        {
-            Console.WriteLine($"Ogiltigt val! Välj en siffra mellan 1 och {produkter.Count}.");
-            continue; //Gå tillbaka till nästa varv i loopen.
-        }
+        Console.WriteLine("(listan är tom)");
     }
     else
     {
-        //Om produkten inte anges med en siffra, så söks produkten upp i listan (oavsett versaler/gesmaler).
-        index = produkter.FindIndex(p => p.Equals(val, StringComparison.OrdinalIgnoreCase));
-        if (index == -1)
+        for (int i = 0; i < inkopslista.Count; i++)
         {
-            Console.WriteLine($"Produkten '{val}' fanns inte på listan.");
-            continue; //Gå tillbaka till nästa varv i loopen.
+            Console.WriteLine($"{i + 1}. {inkopslista[i]} - {priser[i]} kr");
         }
     }
 
-        //if sats där programmet räknar ut ifall produkten finns i lager eller inte.
-    if (lager[index] > 0)
+    //Räkna ihop totalsumman för alla varor på listan.
+    Console.WriteLine($"Totalsumma: {priser.Sum()} kr");
+
+    //Visa menyn.
+    Console.WriteLine();
+    Console.WriteLine("=== Meny ===");
+    Console.WriteLine("1. Lägg till vara");
+    Console.WriteLine("2. Ta bort vara");
+    Console.WriteLine("3. Spara");
+    Console.WriteLine("4. Avsluta programmet");
+    Console.Write("Välj: ");
+    string? val = Console.ReadLine();
+
+    //Felhantering: utan ett menyval kan inget göras.
+    if (string.IsNullOrWhiteSpace(val))
     {
-        //Lägg till priset i totalen och minska antalet i lager.
-        totalPris += priser[index];
-        lager[index]--;
-
-        //Lägg produkten i varukorgen (ökar antalet om den redan finns tidigare i varukorgen).
-        if (varukorg.ContainsKey(produkter[index]))
-        {
-            varukorg[produkter[index]]++;
-        }
-        else
-        {
-            varukorg.Add(produkter[index], 1);
-        }
-
-        Console.WriteLine($"{produkter[index]} köpt för {priser[index]} kr! ({lager[index]} st kvar)");
+        Console.WriteLine("Inget menyval angavs, välj mellan 1 och 4.");
+        continue;
     }
-    else
+
+    //Felhantering: ett val som inte är ett tal eller som inte finns i menyn.
+    if (!int.TryParse(val, out int menyVal) || menyVal < 1 || menyVal > 4)
     {
-        Console.WriteLine("Tyvärr är produkten slut i lagret.");
+        Console.WriteLine($"'{val}' är inte ett giltigt menyval, välj mellan 1 och 4.");
+        continue;
+    }
+
+    switch (menyVal)
+    {
+        case 1: //Lägg till en ny vara (namn + pris) sist i listan.
+            Console.Write("Varans namn: ");
+            string? namn = Console.ReadLine();
+
+            //Felhantering: utan ett namn kan inget läggas till.
+            if (string.IsNullOrWhiteSpace(namn))
+            {
+                Console.WriteLine("Inget namn angavs, inget blev tillagt.");
+                break;
+            }
+
+            Console.Write("Varans pris (t.ex. 25 eller 10,50): ");
+            string? prisText = Console.ReadLine();
+
+            //Felhantering: ett pris som är negativt eller som inte är ett tal
+            //med högst två decimaler accepteras inte, så programmet kraschar inte.
+            if (!ErtGiltigtPris(prisText, out decimal pris))
+            {
+                Console.WriteLine($"'{prisText}' är inte ett giltigt pris (får inte vara negativt och får ha högst två decimaler), inget blev tillagt.");
+                break;
+            }
+
+            //Lägg till både namn och pris sist i sina respektive listor,
+            //så hålls de i synk.
+            inkopslista.Add(namn);
+            priser.Add(pris);
+
+            //Spara listan i filen, så finns varan kvar nästa gång programmet körs.
+            SparaListan();
+
+            Console.WriteLine($"{namn} ({pris} kr) har lagts till i listan.");
+            break;
+
+        case 2: //Ta bort en vara genom att ange dess nummer.
+            if (inkopslista.Count == 0)
+            {
+                Console.WriteLine("Listan är tom - ingen vara att ta bort.");
+                break;
+            }
+
+            Console.Write($"Vilket nummer ska tas bort? (Välj mellan 1 och {inkopslista.Count}): ");
+            string? bortNummer = Console.ReadLine();
+
+            //Felhantering: om valet inte är ett tal eller tomt får användaren
+            //ett felmeddelande istället för en krasch.
+            if (string.IsNullOrWhiteSpace(bortNummer) || !int.TryParse(bortNummer, out int nummer))
+            {
+                Console.WriteLine($"'{bortNummer}' är inte ett giltigt nummer, inget blev borttaget.");
+                break;
+            }
+
+            //Felhantering: ett nummer som inte finns i listan.
+            if (nummer < 1 || nummer > inkopslista.Count)
+            {
+                Console.WriteLine($"Numret {nummer} finns inte i listan. Välj mellan 1 och {inkopslista.Count}.");
+                break;
+            }
+
+            //Menynumret 1 är index 0 i listorna.
+            int index = nummer - 1;
+
+            //Kom ihåg vilket namn som togs bort, för att kunna meddela det.
+            string bortNamn = inkopslista[index];
+
+            //Ta bort varan från BÅDA listorna på samma index, så hålls de i synk.
+            inkopslista.RemoveAt(index);
+            priser.RemoveAt(index);
+
+            //Spara listan i filen, så sparas även borttagningen.
+            SparaListan();
+
+            Console.WriteLine($"{bortNamn} har tagits bort från listan.");
+            break;
+
+        case 3: //Spara listan manuellt till filen.
+            SparaListan();
+            Console.WriteLine($"Listan har sparats i {filNamn}.");
+            break;
+
+        case 4: //Avsluta programmet.
+            Console.WriteLine("Hej då!");
+            avsluta = true;
+            break;
     }
 }
-
-//Kvitto: visar varukorgen och vad som betalades i totalt.
-Console.WriteLine();
-Console.WriteLine("=== Ditt kvitto ===");
-if (varukorg.Count > 0)
-{
-    foreach (var artikel in varukorg) //Räknar upp alla artiklar i varukorgen.
-    {
-        //Sök upp priset för artikeln.
-        int prisIndex = produkter.IndexOf(artikel.Key);
-        Console.WriteLine($"{artikel.Value} st {artikel.Key} - {artikel.Value * priser[prisIndex]} kr");
-    }
-}
-else
-{
-    Console.WriteLine("Inga produkter köpta.");
-}
-Console.WriteLine($"Totalt antal artiklar: {varukorg.Values.Sum()} st");
-Console.WriteLine($"Totalt betalade du {totalPris} kr.");
-Console.WriteLine("Tack för ditt köp!");
-
