@@ -15,27 +15,63 @@ using System.IO;
 //antingen från filen eller när användaren lägger till varor.
 List<string> inkopslista = new List<string>();
 
-//Inköpslistans priser (i kronor). Hålls i synk med listan ovan:
+//Inköpslistans priser (i hela kronor). Hålls i synk med listan ovan:
 //samma index i båda listorna betyder samma vara.
-//Decimal används så att priset kan ha två decimaler, t.ex. 10,50.
-List<decimal> priser = new List<decimal>();
+//Int används så att priset bara kan vara ett heltal, t.ex. 25.
+List<int> priser = new List<int>();
 
 //Namnet på filen där inköpslistan sparas.
 string filNamn = "inkopslista.txt";
 
-//Kollar om en text är ett giltigt pris: ett icke-negativt tal med högst två decimaler,
-//t.ex. 25, 10,5 eller 10,50. Sätter priset i 'pris' om det är giltigt.
-bool ErtGiltigtPris(string? text, out decimal pris)
+//Tolkar en pristext till ett heltal, t.ex. '25'.
+//Returnerar true om texten är ett giltigt heltal, annars false.
+bool TolkaPris(string? text, out int pris)
 {
-    //Först: är texten ett tal alls?
-    if (!decimal.TryParse(text, out pris))
+    //int.TryParse returnerar false för tom text och text som inte är ett heltal.
+    return int.TryParse(text, out pris);
+}
+
+//Kollar om en text är ett giltigt pris: ett icke-negativt heltal,
+//t.ex. 25. Sätter priset i 'pris' om det är giltigt.
+bool ErtGiltigtPris(string? text, out int pris)
+{
+    //Först: är texten ett heltal alls?
+    if (!TolkaPris(text, out pris))
     {
         return false;
     }
 
-    //Sedan: priset får inte vara negativt och får ha högst två decimaler
-    //(0,01 kr är den minsta enheten).
-    return pris >= 0 && pris % 0.01m == 0;
+    //Sedan: priset får inte vara negativt.
+    return pris >= 0;
+}
+
+//Kollar om en text innehåller bokstäver, t.ex. 'a', 'B' eller 'ö'.
+bool InnehållerBokstäver(string text)
+{
+    foreach (char tecken in text)
+    {
+        if (char.IsLetter(tecken))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//Kollar om en text innehåller specialtecken, t.ex. ',', '.' eller '#'.
+//Minus tillåts också, så att ett negativt pris får sitt eget felmeddelande.
+bool InnehållerSpecialtecken(string text)
+{
+    foreach (char tecken in text)
+    {
+        if (!char.IsDigit(tecken) && tecken != '-')
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //Läser in varorna från filen om den finns (t.ex. från en tidigare körning).
@@ -55,7 +91,7 @@ if (File.Exists(filNamn))
 
         //Om raden har både namn och giltigt pris, lägg till varan.
         //Trasiga rader hoppas över, så kraschar programmet inte.
-        if (delar.Length == 2 && ErtGiltigtPris(delar[1], out decimal lagratPris))
+        if (delar.Length == 2 && ErtGiltigtPris(delar[1], out int lagratPris))
         {
             inkopslista.Add(delar[0]);
             priser.Add(lagratPris);
@@ -134,18 +170,54 @@ while (!avsluta)
             //Felhantering: utan ett namn kan inget läggas till.
             if (string.IsNullOrWhiteSpace(namn))
             {
-                Console.WriteLine("Inget namn angavs, inget blev tillagt.");
+                Console.WriteLine("Inget namn angavs, du behöver ange varans namn.");
                 break;
             }
 
-            Console.Write("Varans pris (t.ex. 25 eller 10,50): ");
+            Console.Write("Ange varans pris i hela kronor (t.ex. 25): ");
             string? prisText = Console.ReadLine();
 
-            //Felhantering: ett pris som är negativt eller som inte är ett tal
-            //med högst två decimaler accepteras inte, så programmet kraschar inte.
-            if (!ErtGiltigtPris(prisText, out decimal pris))
+            //Felhantering: utan ett pris kan inget läggas till.
+            if (string.IsNullOrWhiteSpace(prisText))
             {
-                Console.WriteLine($"'{prisText}' är inte ett giltigt pris (får inte vara negativt och får ha högst två decimaler), inget blev tillagt.");
+                Console.WriteLine("Inget pris angavs, inget blev tillagt.");
+                break;
+            }
+
+            //Felhantering: bokstäver i priset, t.ex. 'abc' eller '10kr'.
+            if (InnehållerBokstäver(prisText))
+            {
+                Console.WriteLine($"'{prisText}' innehåller bokstäver, priset får bara innehålla siffror i heltal, varan blev tillagt.");
+                break;
+            }
+
+            //Felhantering: decimalavdelare i priset, t.ex. '12,50' eller '12.50'.
+            //Priset måste vara ett heltal, så både komma och punkt får ett eget meddelande.
+            if (prisText.Contains(',') || prisText.Contains('.'))
+            {
+                Console.WriteLine("Du behöver skriva ett heltal utan decimaler, försök igen");
+                break;
+            }
+
+            //Felhantering: specialtecken i priset, t.ex. '10#5' eller '10;5'.
+            //Endast siffror är tillåtna (samt - för negativt pris).
+            if (InnehållerSpecialtecken(prisText))
+            {
+                Console.WriteLine($"'{prisText}' innehåller specialtecken, priset får bara innehålla siffror, inget blev tillagt.");
+                break;
+            }
+
+            //Felhantering: texten som helhet är inte ett heltal, t.ex. '-'.
+            if (!TolkaPris(prisText, out int pris))
+            {
+                Console.WriteLine($"'{prisText}' är inte ett giltigt pris, inget blev tillagt.");
+                break;
+            }
+
+            //Felhantering: ett negativt pris accepteras inte.
+            if (pris < 0)
+            {
+                Console.WriteLine($"'{prisText}' är ett negativt pris, priset får inte vara negativt, inget blev tillagt.");
                 break;
             }
 

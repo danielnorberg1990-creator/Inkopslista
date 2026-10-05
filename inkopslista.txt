@@ -1,3 +1,2 @@
 Kaffe;25
-Mjölk;23,50
-Mjölk;22,50
+Bröd;23
