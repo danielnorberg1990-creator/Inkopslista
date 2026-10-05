@@ -32,7 +32,7 @@ bool TolkaPris(string? text, out int pris)
 }
 
 //Kollar om en text är ett giltigt pris: ett icke-negativt heltal,
-//t.ex. 25. Sätter priset i 'pris' om det är giltigt.
+//t.ex. 25. Sätter värdet i 'pris' om det är giltigt.
 bool ErtGiltigtPris(string? text, out int pris)
 {
     //Först: är texten ett heltal alls?
@@ -135,7 +135,7 @@ while (!avsluta)
     }
 
     //Räkna ihop totalsumman för alla varor på listan.
-    Console.WriteLine($"Totalsumma: {priser.Sum()} kr");
+    Console.WriteLine($"Totalt: {priser.Sum()} kr");
 
     //Visa menyn.
     Console.WriteLine();
@@ -187,7 +187,7 @@ while (!avsluta)
             //Felhantering: bokstäver i priset, t.ex. 'abc' eller '10kr'.
             if (InnehållerBokstäver(prisText))
             {
-                Console.WriteLine($"'{prisText}' innehåller bokstäver, priset får bara innehålla siffror i heltal, varan blev tillagt.");
+                Console.WriteLine($"'{prisText}' innehåller bokstäver, priset får bara innehålla siffror i heltal, varan blev inte tillagt.");
                 break;
             }
 
@@ -301,7 +301,7 @@ while (!avsluta)
             }
 
             //Totalsumman för alla varor på listan (blir 0 kr om listan är tom).
-            Console.WriteLine($"Totalsumma: {priser.Sum()} kr");
+            Console.WriteLine($"Totalt: {priser.Sum()} kr");
 
             Console.WriteLine();
             Console.WriteLine("Glöm inte handla detta!");
