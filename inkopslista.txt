@@ -1,2 +1,3 @@
 Kaffe;25
 Bröd;23
+Baljväxt;45

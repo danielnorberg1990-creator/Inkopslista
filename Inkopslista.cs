@@ -279,7 +279,32 @@ while (!avsluta)
             break;
 
         case 4: //Avsluta programmet.
-            Console.WriteLine("Hej då!");
+            //Visa en sammanfattning av inköpslistan som ett kvitto
+            //innan programmet stänger.
+            Console.WriteLine();
+            Console.WriteLine("=== INKÖPSLISTA ===");
+
+            if (inkopslista.Count == 0)
+            {
+                //Inga varor att sammanfatta om listan är tom.
+                Console.WriteLine("(listan är tom - inga varor)");
+            }
+            else
+            {
+                //En rad per vara: namn och pris, på samma sätt som listan visas.
+                for (int i = 0; i < inkopslista.Count; i++)
+                {
+                    Console.WriteLine($"{inkopslista[i]} - {priser[i]} kr");
+                }
+
+                Console.WriteLine("----------------");
+            }
+
+            //Totalsumman för alla varor på listan (blir 0 kr om listan är tom).
+            Console.WriteLine($"Totalsumma: {priser.Sum()} kr");
+
+            Console.WriteLine();
+            Console.WriteLine("Glöm inte handla detta!");
             avsluta = true;
             break;
     }
